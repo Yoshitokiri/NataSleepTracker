@@ -1,6 +1,6 @@
 {
-  "name": "Sueño de Bebé",
-  "short_name": "Sueño Bebé",
+  "name": "Sueño de Natalia",
+  "short_name": "Sueño Natalia",
   "description": "Registro y estadísticas de sueño para tu bebé",
   "start_url": "./index.html",
   "scope": "./",

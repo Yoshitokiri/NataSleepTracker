@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="icons/icon-192.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<title>Sueño de Bebé</title>
+<title>Sueño de Natalia</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
@@ -60,6 +60,15 @@
   }
   .brand{display:flex; align-items:center; gap:10px;}
   .brand svg{width:22px;height:22px;flex-shrink:0;}
+  .brand-title{display:flex; align-items:baseline; gap:6px;}
+  .static-prefix{
+    font-family:var(--font-display);
+    font-size:20px;
+    font-weight:600;
+    letter-spacing:0.2px;
+    color:var(--text);
+    white-space:nowrap;
+  }
   .baby-name{
     font-family:var(--font-display);
     font-size:20px;
@@ -67,9 +76,10 @@
     letter-spacing:0.2px;
     background:none;
     border:none;
-    color:var(--text);
+    color:var(--moon);
     width:auto;
-    max-width:180px;
+    max-width:140px;
+    padding:0;
   }
   .baby-name:focus{outline:none; border-bottom:1px solid var(--moon);}
   .header-sub{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:1.2px; margin-top:1px;}
@@ -336,7 +346,28 @@
   .stat-card .lbl{font-size:11px; color:var(--text-muted); margin-top:4px; line-height:1.4;}
 
   /* ---------- History ---------- */
-  .history-day{margin-bottom:16px;}
+  .history-day{margin-bottom:10px;}
+  .history-day-header{
+    width:100%;
+    display:flex; align-items:center; justify-content:space-between;
+    background:var(--card);
+    border:1px solid var(--card-line);
+    border-radius:var(--radius-sm);
+    padding:12px 14px;
+    cursor:pointer;
+    font-family:var(--font-body);
+    color:var(--text);
+    margin-bottom:0;
+  }
+  .history-day-header .hdh-left{display:flex; align-items:center; gap:8px;}
+  .history-day-header .chev{
+    display:inline-block; color:var(--text-faint); font-size:14px;
+    transition:transform .2s ease;
+  }
+  .history-day-header.expanded .chev{ transform:rotate(90deg); color:var(--moon); }
+  .history-day-header .hdh-right{font-size:11px; color:var(--text-muted); font-family:var(--font-mono);}
+  .history-day-body{ display:none; padding-top:8px; }
+  .history-day-body.expanded{ display:block; }
   .history-day-label{
     font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:1px;
     margin-bottom:8px; font-weight:600;
@@ -428,7 +459,10 @@
   <div class="brand">
     <svg viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z" fill="#F0B86E"/></svg>
     <div>
-      <input id="babyName" class="baby-name" value="Mi bebé" maxlength="24" />
+      <div class="brand-title">
+        <span class="static-prefix">Sueño de</span>
+        <input id="babyName" class="baby-name" value="Natalia" maxlength="24" />
+      </div>
       <div class="header-sub">Registro de sueño</div>
     </div>
   </div>
@@ -703,6 +737,7 @@ function toggleSleep(){
   }
   saveSessions(sessions);
   selectedDay = todayKey();
+  if(expandedHistoryDays) expandedHistoryDays.add(todayKey());
   renderAll();
 }
 
@@ -848,9 +883,9 @@ function renderSky(){
     block.style.left = startPct+'%';
     block.style.width = widthPct+'%';
     const lbl = document.createElement('div');
-    lbl.className = 'blk-lbl' + (widthPct<9 ? ' outside':'');
-    lbl.textContent = toDecimalComma(durDec, 2);
-    if(widthPct<9){ block.style.background='transparent'; lbl.style.color='var(--moon)'; }
+    lbl.className = 'blk-lbl' + (widthPct<15 ? ' outside':'');
+    lbl.textContent = minutesToHM(durMin);
+    if(widthPct<15){ block.style.background='transparent'; lbl.style.color='var(--moon)'; }
     block.appendChild(lbl);
     track.appendChild(block);
     row.appendChild(track);
@@ -919,42 +954,73 @@ function renderOccChart(){
 /* ============ Rendering: combo chart (ocurrencias + horas totales) ============ */
 function renderComboChart(){
   const days = lastNDateKeys(chartRange);
+  const step = labelStep(days.length);
+  const showValues = chartRange <= 14; // avoid clutter at 30 days
   const counts = days.map(dk => sessions.filter(s=>dateKey(new Date(s.start))===dk).length);
-  const hours = days.map(dk => sessions.filter(s=>dateKey(new Date(s.start))===dk).reduce((sum,s)=>sum+durationMinutes(s),0)/60);
+  const hoursMin = days.map(dk => sessions.filter(s=>dateKey(new Date(s.start))===dk).reduce((sum,s)=>sum+durationMinutes(s),0)); // minutes
+  const hours = hoursMin.map(m=>m/60);
 
-  const w = 320, h = 150, padL = 26, padR = 26, padB = 20, padT = 10;
+  const w = 340, h = 190, padL = 22, padR = 30, padB = 24, padT = 22;
   const plotW = w - padL - padR, plotH = h - padT - padB;
-  const barMax = Math.max(3, ...counts) * 1.15;
-  const lineMax = Math.max(3, ...hours) * 1.15;
+  const barMax = Math.max(3, ...counts) * 1.2;
+  const lineMax = Math.max(1, ...hours) * 1.2;
   const n = days.length;
   const slot = plotW / n;
   const barW = Math.min(14, slot*0.5);
 
   let bars = '';
+  let barLabels = '';
   let points = [];
   days.forEach((dk,i)=>{
     const cx = padL + slot*i + slot/2;
     const bh = (counts[i]/barMax)*plotH;
-    bars += `<rect x="${cx-barW/2}" y="${padT+plotH-bh}" width="${barW}" height="${Math.max(1,bh)}" rx="3" fill="var(--sky)" opacity="0.85"/>`;
+    bars += `<rect x="${(cx-barW/2).toFixed(1)}" y="${(padT+plotH-bh).toFixed(1)}" width="${barW.toFixed(1)}" height="${Math.max(1,bh).toFixed(1)}" rx="3" fill="var(--sky)" opacity="0.85"/>`;
+    if(showValues && counts[i]>0){
+      barLabels += `<text x="${cx.toFixed(1)}" y="${(padT+plotH-bh-4).toFixed(1)}" font-size="8" fill="var(--sky)" font-family="monospace" text-anchor="middle">${counts[i]}</text>`;
+    }
     const ly = padT + plotH - (hours[i]/lineMax)*plotH;
     points.push([cx, ly]);
   });
   const linePath = points.map((p,i)=> (i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
   let dots = points.map(p=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="3" fill="var(--moon)"/>`).join('');
+  let lineLabels = '';
+  if(showValues){
+    points.forEach((p,i)=>{
+      if(hoursMin[i]<=0) return;
+      lineLabels += `<text x="${p[0].toFixed(1)}" y="${(p[1]-7).toFixed(1)}" font-size="8" fill="var(--moon)" font-family="monospace" text-anchor="middle">${minutesToHM(hoursMin[i])}</text>`;
+    });
+  }
 
-  // gridlines
-  let grid = '';
+  // gridlines + Y axis labels (left = ocurrencias, right = horas)
+  let grid = '', yAxis = '';
   for(let i=0;i<=3;i++){
     const y = padT + plotH*(i/3);
     grid += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${w-padR}" y2="${y.toFixed(1)}" stroke="var(--card-line)" stroke-width="1"/>`;
+    const leftVal = Math.round(barMax*(1-i/3));
+    const rightValMin = lineMax*60*(1-i/3);
+    yAxis += `<text x="2" y="${(y+3).toFixed(1)}" font-size="7.5" fill="var(--sky)" font-family="monospace">${leftVal}</text>`;
+    yAxis += `<text x="${w-padR+4}" y="${(y+3).toFixed(1)}" font-size="7.5" fill="var(--moon)" font-family="monospace">${minutesToHM(rightValMin)}</text>`;
   }
 
+  // X axis labels
+  let xAxis = '';
+  days.forEach((dk,i)=>{
+    if(i%step!==0) return;
+    const d = new Date(dk+"T12:00:00");
+    const txt = d.toLocaleDateString('es-PE',{day:'numeric'});
+    xAxis += `<text x="${points[i][0].toFixed(1)}" y="${h-6}" font-size="8" fill="var(--text-faint)" font-family="monospace" text-anchor="middle">${txt}</text>`;
+  });
+
   const svg = `
-  <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:150px; overflow:visible;">
+  <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:170px; overflow:visible;">
     ${grid}
     ${bars}
+    ${barLabels}
     <path d="${linePath}" fill="none" stroke="var(--moon)" stroke-width="2"/>
     ${dots}
+    ${lineLabels}
+    ${yAxis}
+    ${xAxis}
   </svg>`;
   document.getElementById('comboChart').innerHTML = svg;
 }
@@ -976,7 +1042,7 @@ function renderBarChart(){
     col.className='bar-col';
     const val = document.createElement('div');
     val.className='bar-val';
-    val.textContent = t.mins>0 ? Math.round(t.mins/60*10)/10+'h' : '';
+    val.textContent = t.mins>0 ? minutesToHM(t.mins) : '';
     const fill = document.createElement('div');
     fill.className='bar-fill';
     const pct = Math.max(2, (t.mins/max)*100);
@@ -1184,6 +1250,8 @@ function renderStats(){
 /* ============ Rendering: history ============ */
 let editingId = null;
 
+let expandedHistoryDays = null; // Set of dateKeys currently expanded (persists across re-renders)
+
 function renderHistory(){
   const list = document.getElementById('historyList');
   document.getElementById('historyCount').textContent = sessions.length + ' registros';
@@ -1200,16 +1268,40 @@ function renderHistory(){
     const dk = dateKey(new Date(s.start));
     (byDay[dk] = byDay[dk]||[]).push(s);
   });
+  const dayKeys = Object.keys(byDay).sort().reverse();
 
-  Object.keys(byDay).sort().reverse().forEach(dk=>{
+  if(expandedHistoryDays===null){
+    expandedHistoryDays = new Set(dayKeys.length ? [dayKeys[0]] : []);
+  }
+
+  dayKeys.forEach(dk=>{
+    const daySessions = byDay[dk];
+    const isOpen = expandedHistoryDays.has(dk);
+    const totalMin = daySessions.reduce((s,x)=>s+durationMinutes(x),0);
+
     const dayWrap = document.createElement('div');
     dayWrap.className='history-day';
-    const lbl = document.createElement('div');
-    lbl.className='history-day-label';
-    lbl.textContent = fmtDayLabel(dk);
-    dayWrap.appendChild(lbl);
 
-    byDay[dk].forEach(s=>{
+    const header = document.createElement('button');
+    header.className = 'history-day-header' + (isOpen ? ' expanded' : '');
+    header.innerHTML = `
+      <div class="hdh-left">
+        <span class="chev">›</span>
+        <span class="history-day-label" style="margin:0;">${fmtDayLabel(dk)}</span>
+      </div>
+      <div class="hdh-right">${daySessions.length} ${daySessions.length===1?'sueño':'sueños'} · ${minutesToHM(totalMin)}</div>
+    `;
+    header.addEventListener('click', ()=>{
+      if(expandedHistoryDays.has(dk)) expandedHistoryDays.delete(dk);
+      else expandedHistoryDays.add(dk);
+      renderHistory();
+    });
+    dayWrap.appendChild(header);
+
+    const body = document.createElement('div');
+    body.className = 'history-day-body' + (isOpen ? ' expanded' : '');
+
+    daySessions.forEach(s=>{
       const item = document.createElement('div');
       item.className='history-item';
       const durTxt = s.end ? minutesToHM(durationMinutes(s)) : 'En curso…';
@@ -1223,13 +1315,14 @@ function renderHistory(){
         <button class="edit-btn" data-id="${s.id}" title="Editar">✎</button>
         <button class="del-btn" data-id="${s.id}" title="Eliminar">🗑</button>
       `;
-      dayWrap.appendChild(item);
+      body.appendChild(item);
     });
+    dayWrap.appendChild(body);
     list.appendChild(dayWrap);
   });
 
-  list.querySelectorAll('.edit-btn').forEach(b=>b.addEventListener('click', ()=>openEdit(b.dataset.id)));
-  list.querySelectorAll('.del-btn').forEach(b=>b.addEventListener('click', ()=>deleteSession(b.dataset.id)));
+  list.querySelectorAll('.edit-btn').forEach(b=>b.addEventListener('click', (e)=>{ e.stopPropagation(); openEdit(b.dataset.id); }));
+  list.querySelectorAll('.del-btn').forEach(b=>b.addEventListener('click', (e)=>{ e.stopPropagation(); deleteSession(b.dataset.id); }));
 }
 
 function deleteSession(id){
@@ -1286,6 +1379,7 @@ document.getElementById('saveEdit').addEventListener('click', ()=>{
   }
   saveSessions(sessions);
   selectedDay = dateKey(startD);
+  if(expandedHistoryDays) expandedHistoryDays.add(dateKey(startD));
   closeModal();
   renderAll();
 });
@@ -1301,8 +1395,8 @@ deleteEditBtn.addEventListener('click', ()=>{
 
 /* ============ Baby name ============ */
 const nameInput = document.getElementById('babyName');
-nameInput.value = localStorage.getItem(NAME_KEY) || 'Mi bebé';
-nameInput.addEventListener('change', ()=> localStorage.setItem(NAME_KEY, nameInput.value || 'Mi bebé'));
+nameInput.value = localStorage.getItem(NAME_KEY) || 'Natalia';
+nameInput.addEventListener('change', ()=> localStorage.setItem(NAME_KEY, nameInput.value || 'Natalia'));
 
 /* ============ Master render ============ */
 /* ============ Grouped range-chart render (used by range selector) ============ */
@@ -1362,7 +1456,7 @@ function todayStamp(){
 document.getElementById('exportJsonBtn').addEventListener('click', ()=>{
   const payload = {
     exportedAt: new Date().toISOString(),
-    babyName: localStorage.getItem(NAME_KEY) || 'Mi bebé',
+    babyName: localStorage.getItem(NAME_KEY) || 'Natalia',
     sessions: sessions
   };
   downloadBlob(JSON.stringify(payload, null, 2), `sueno-bebe-backup-${todayStamp()}.json`, 'application/json');
@@ -1402,6 +1496,7 @@ document.getElementById('importInput').addEventListener('change', (e)=>{
       saveSessions(sessions);
       if(data.babyName){ localStorage.setItem(NAME_KEY, data.babyName); nameInput.value = data.babyName; }
       selectedDay = null;
+      expandedHistoryDays = null;
       renderAll();
       alert('Datos importados correctamente.');
     }catch(err){
