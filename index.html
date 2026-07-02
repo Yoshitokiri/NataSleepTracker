@@ -137,6 +137,91 @@
   .chip .v{font-family:var(--font-mono); font-size:22px; font-weight:700; color:var(--moon);}
   .chip .l{font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-top:4px;}
 
+  /* ---------- Prediction banner ---------- */
+  .predict-banner{
+    display:none;
+    margin:14px auto 0; max-width:320px;
+    background:linear-gradient(135deg, rgba(240,184,110,0.14), rgba(143,166,217,0.08));
+    border:1px solid var(--moon-dim);
+    border-radius:14px;
+    padding:10px 14px;
+    text-align:center;
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.5;
+  }
+  .predict-banner.show{display:block;}
+  .predict-banner b{color:var(--moon); font-family:var(--font-mono);}
+
+  /* ---------- Range selector ---------- */
+  .range-selector{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:34px; margin-bottom:-10px;
+  }
+  .range-selector .rs-label{
+    font-family:var(--font-display); font-size:15px; font-weight:600; color:var(--text-muted);
+  }
+  .rs-buttons{display:flex; background:var(--card); border:1px solid var(--card-line); border-radius:11px; padding:3px; gap:2px;}
+  .rs-buttons button{
+    background:none; border:none; color:var(--text-faint); font-size:12px; font-weight:700;
+    padding:6px 12px; border-radius:8px; cursor:pointer; font-family:var(--font-body);
+  }
+  .rs-buttons button.active{background:var(--moon); color:#2a1e0d;}
+
+  /* ---------- Wake window gap row (inside timeline) ---------- */
+  .gap-row{
+    display:flex; align-items:center; gap:8px; padding:2px 0 2px 58px;
+  }
+  .gap-row .gap-line{flex:1; height:1px; background:repeating-linear-gradient(90deg, var(--card-line) 0 4px, transparent 4px 8px);}
+  .gap-row .gap-txt{
+    font-size:9.5px; color:var(--text-faint); font-family:var(--font-mono); white-space:nowrap;
+  }
+
+  /* ---------- Heatmap ---------- */
+  .heatmap-card{
+    background:var(--card);
+    border:1px solid var(--card-line);
+    border-radius:var(--radius-lg);
+    padding:16px 12px 14px;
+    overflow-x:auto;
+  }
+  .heatmap-inner{min-width:340px;}
+  .heat-hours{
+    display:grid; grid-template-columns:46px repeat(24, 1fr);
+    margin-bottom:4px;
+  }
+  .heat-hours span{font-size:8px; color:var(--text-faint); font-family:var(--font-mono); text-align:left;}
+  .heat-row{
+    display:grid; grid-template-columns:46px repeat(24, 1fr);
+    align-items:center;
+    gap:1px;
+    margin-bottom:2px;
+  }
+  .heat-row .heat-day-lbl{font-size:9px; color:var(--text-muted); font-family:var(--font-mono); padding-right:4px;}
+  .heat-cell{
+    aspect-ratio:1; border-radius:2px; background:var(--bg-2);
+  }
+  .heat-legend{display:flex; align-items:center; gap:6px; margin-top:10px; justify-content:flex-end;}
+  .heat-legend span{font-size:9px; color:var(--text-faint);}
+  .heat-legend .heat-cell{width:10px; height:10px; flex-shrink:0;}
+
+  /* ---------- Backup section ---------- */
+  .backup-row{display:flex; gap:10px;}
+  .backup-btn{
+    flex:1;
+    background:var(--card);
+    border:1px solid var(--card-line);
+    color:var(--text-muted);
+    border-radius:var(--radius-md);
+    padding:13px 8px;
+    font-family:var(--font-body); font-size:12.5px; font-weight:600;
+    cursor:pointer;
+    text-align:center;
+  }
+  .backup-btn:active{background:var(--card-2);}
+  .backup-note{font-size:11px; color:var(--text-faint); margin-top:10px; line-height:1.6; text-align:center;}
+  .import-input{display:none;}
+
   /* ---------- Section titles ---------- */
   .section{margin-top:34px;}
   .section-title{
@@ -358,6 +443,7 @@
       <div class="moon-timer" id="btnTimer"></div>
     </button>
     <div class="stage-hint" id="stageHint">Toca cuando tu bebé se quede dormido. Vuelve a tocar cuando despierte.</div>
+    <div class="predict-banner" id="predictBanner"></div>
   </div>
 
   <div class="chips">
@@ -382,14 +468,41 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Ocurrencias de sueño por día <span class="eyebrow">Últimos 14 días</span></div>
+    <div class="section-title">Mapa de calor semanal <span class="eyebrow">Sueño por hora</span></div>
+    <div class="heatmap-card">
+      <div class="heatmap-inner">
+        <div class="heat-hours" id="heatHours"></div>
+        <div id="heatRows"></div>
+        <div class="heat-legend">
+          <span>menos</span>
+          <div class="heat-cell" style="background:var(--bg-2)"></div>
+          <div class="heat-cell" style="background:rgba(240,184,110,0.35)"></div>
+          <div class="heat-cell" style="background:rgba(240,184,110,0.7)"></div>
+          <div class="heat-cell" style="background:rgba(240,184,110,1)"></div>
+          <span>más</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="range-selector">
+    <div class="rs-label">Gráficas</div>
+    <div class="rs-buttons" id="rangeButtons">
+      <button data-range="7">7d</button>
+      <button data-range="14" class="active">14d</button>
+      <button data-range="30">30d</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Ocurrencias de sueño por día <span class="eyebrow" id="occEyebrow">Últimos 14 días</span></div>
     <div class="bar-card">
       <div class="bars" id="occChart"></div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-title">Ocurrencias y horas totales <span class="eyebrow">Últimos 14 días</span></div>
+    <div class="section-title">Ocurrencias y horas totales <span class="eyebrow" id="comboEyebrow">Últimos 14 días</span></div>
     <div class="combo-card">
       <div class="combo-legend">
         <div class="li"><span class="sw bar"></span>Ocurrencias</div>
@@ -400,9 +513,23 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Horas de sueño por día <span class="eyebrow">Últimos 14 días</span></div>
+    <div class="section-title">Horas de sueño por día <span class="eyebrow" id="hoursEyebrow">Últimos 14 días</span></div>
     <div class="bar-card">
       <div class="bars" id="barChart"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Ventana de vigilia promedio <span class="eyebrow" id="wwEyebrow">Últimos 14 días</span></div>
+    <div class="bar-card">
+      <div class="bars" id="wwChart"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Tendencia de sueño <span class="eyebrow">Promedio móvil 7 días</span></div>
+    <div class="combo-card">
+      <div id="trendChart"></div>
     </div>
   </div>
 
@@ -415,6 +542,17 @@
     <div class="section-title">Historial <span class="eyebrow" id="historyCount"></span></div>
     <button class="add-manual" id="addManualBtn">+ Agregar registro manual</button>
     <div id="historyList" style="margin-top:14px;"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Respaldo de datos</div>
+    <div class="backup-row">
+      <button class="backup-btn" id="exportJsonBtn">⬇ Exportar JSON</button>
+      <button class="backup-btn" id="exportCsvBtn">⬇ Exportar CSV</button>
+      <button class="backup-btn" id="importBtn">⬆ Importar</button>
+    </div>
+    <input type="file" id="importInput" class="import-input" accept="application/json" />
+    <div class="backup-note">JSON: respaldo completo, se puede volver a importar. CSV: para ver en Excel/Sheets. Importar reemplaza todos tus registros actuales.</div>
   </div>
 
   <div class="install-banner" id="installBanner">
@@ -528,6 +666,34 @@ function minutesToClock(mins){
 /* ============ Core toggle ============ */
 function getActiveSession(){ return sessions.find(s=>s.end===null) || null; }
 
+/* ============ Wake windows (time awake between sleeps) ============ */
+function getWakeWindows(){
+  const sorted = [...sessions].sort((a,b)=> new Date(a.start)-new Date(b.start));
+  const windows = [];
+  for(let i=0;i<sorted.length-1;i++){
+    const cur = sorted[i], next = sorted[i+1];
+    if(!cur.end) continue;
+    const gapMin = (new Date(next.start) - new Date(cur.end))/60000;
+    if(gapMin <= 0) continue;
+    windows.push({ dayKey: dateKey(new Date(cur.end)), minutes: gapMin, start: cur.end, end: next.start });
+  }
+  return windows;
+}
+
+/* ============ Chart range (7/14/30 days) ============ */
+let chartRange = 14;
+document.querySelectorAll('#rangeButtons button').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    chartRange = parseInt(b.dataset.range, 10);
+    document.querySelectorAll('#rangeButtons button').forEach(x=>x.classList.toggle('active', x===b));
+    const label = 'Últimos ' + chartRange + ' días';
+    ['occEyebrow','comboEyebrow','hoursEyebrow','wwEyebrow'].forEach(id=>{
+      document.getElementById(id).textContent = label;
+    });
+    renderRangeCharts();
+  });
+});
+
 function toggleSleep(){
   const active = getActiveSession();
   if(active){
@@ -579,6 +745,42 @@ function renderChips(){
   const totalMin = todays.reduce((sum,s)=> sum + durationMinutes(s), 0);
   document.getElementById('chipTotal').textContent = minutesToHM(totalMin);
   document.getElementById('chipNaps').textContent = todays.length;
+}
+
+/* ============ Prediction: next likely nap ============ */
+function renderPrediction(){
+  const banner = document.getElementById('predictBanner');
+  const active = getActiveSession();
+  if(active){ banner.classList.remove('show'); return; }
+
+  const completed = sessions.filter(s=>s.end).sort((a,b)=> new Date(b.end)-new Date(a.end));
+  if(completed.length===0){ banner.classList.remove('show'); return; }
+  const lastEnd = new Date(completed[0].end);
+
+  const windows = getWakeWindows();
+  // typical awake windows for babies are under ~5h; filter outliers, keep most recent ones
+  const recent = windows.slice(-8).map(w=>w.minutes).filter(m=>m>10 && m<300);
+  if(recent.length<3){ banner.classList.remove('show'); return; }
+
+  const mean = recent.reduce((a,b)=>a+b,0)/recent.length;
+  const variance = recent.reduce((a,b)=>a+Math.pow(b-mean,2),0)/recent.length;
+  const stdev = Math.sqrt(variance);
+  const spread = Math.min(45, Math.max(12, stdev)); // minutes, clamped for readability
+
+  const predicted = new Date(lastEnd.getTime() + mean*60000);
+  const now = new Date();
+
+  const timeStr = predicted.toLocaleTimeString('es-PE', {hour:'2-digit', minute:'2-digit', hour12:true});
+  const diffMin = (predicted - now)/60000;
+
+  let msg;
+  if(diffMin < -20){
+    msg = `Según su patrón habitual, ya llevaba despierto más de lo usual desde las ${fmtTime(completed[0].end)}.`;
+  } else {
+    msg = `Basado en sus últimas ventanas de vigilia, podría tener sueño cerca de <b>${timeStr}</b> (±${Math.round(spread)} min).`;
+  }
+  banner.innerHTML = msg;
+  banner.classList.add('show');
 }
 
 /* ============ Rendering: timeline por sueño (día seleccionado) ============ */
@@ -659,6 +861,18 @@ function renderSky(){
     row.appendChild(horario);
 
     container.appendChild(row);
+
+    // wake-window gap to next session, if both exist and are chronologically adjacent
+    if(s.end && i < daySessions.length-1){
+      const next = daySessions[i+1];
+      const gapMin = (new Date(next.start) - new Date(s.end))/60000;
+      if(gapMin > 0){
+        const gapRow = document.createElement('div');
+        gapRow.className = 'gap-row';
+        gapRow.innerHTML = `<div class="gap-line"></div><div class="gap-txt">despierto ${minutesToHM(gapMin)}</div><div class="gap-line"></div>`;
+        container.appendChild(gapRow);
+      }
+    }
   });
 }
 document.getElementById('dayPrev').addEventListener('click', ()=>{
@@ -673,8 +887,11 @@ document.getElementById('dayNext').addEventListener('click', ()=>{
 });
 
 /* ============ Rendering: ocurrencias por día ============ */
+function labelStep(n){ return n<=14 ? 1 : (n<=21 ? 2 : 3); }
+
 function renderOccChart(){
-  const days = lastNDateKeys(14);
+  const days = lastNDateKeys(chartRange);
+  const step = labelStep(days.length);
   const counts = days.map(dk => sessions.filter(s=>dateKey(new Date(s.start))===dk).length);
   const max = Math.max(3, ...counts);
   const container = document.getElementById('occChart');
@@ -693,7 +910,7 @@ function renderOccChart(){
     const lbl = document.createElement('div');
     lbl.className='bar-lbl';
     const d = new Date(dk+"T12:00:00");
-    lbl.textContent = d.toLocaleDateString('es-PE',{day:'numeric'});
+    lbl.textContent = (i%step===0) ? d.toLocaleDateString('es-PE',{day:'numeric'}) : '';
     col.appendChild(val); col.appendChild(fill); col.appendChild(lbl);
     container.appendChild(col);
   });
@@ -701,7 +918,7 @@ function renderOccChart(){
 
 /* ============ Rendering: combo chart (ocurrencias + horas totales) ============ */
 function renderComboChart(){
-  const days = lastNDateKeys(14);
+  const days = lastNDateKeys(chartRange);
   const counts = days.map(dk => sessions.filter(s=>dateKey(new Date(s.start))===dk).length);
   const hours = days.map(dk => sessions.filter(s=>dateKey(new Date(s.start))===dk).reduce((sum,s)=>sum+durationMinutes(s),0)/60);
 
@@ -742,9 +959,10 @@ function renderComboChart(){
   document.getElementById('comboChart').innerHTML = svg;
 }
 
-/* ============ Rendering: bar chart (14 days totals) ============ */
+/* ============ Rendering: bar chart (totals) ============ */
 function renderBarChart(){
-  const days = lastNDateKeys(14);
+  const days = lastNDateKeys(chartRange);
+  const step = labelStep(days.length);
   const totals = days.map(dk=>{
     const t = sessions.filter(s=>dateKey(new Date(s.start))===dk)
                        .reduce((sum,s)=>sum+durationMinutes(s),0);
@@ -753,7 +971,7 @@ function renderBarChart(){
   const max = Math.max(60, ...totals.map(t=>t.mins));
   const container = document.getElementById('barChart');
   container.innerHTML = '';
-  totals.forEach(t=>{
+  totals.forEach((t,i)=>{
     const col = document.createElement('div');
     col.className='bar-col';
     const val = document.createElement('div');
@@ -766,11 +984,152 @@ function renderBarChart(){
     const lbl = document.createElement('div');
     lbl.className='bar-lbl';
     const d = new Date(t.dk+"T12:00:00");
-    lbl.textContent = d.toLocaleDateString('es-PE',{day:'numeric'});
+    lbl.textContent = (i%step===0) ? d.toLocaleDateString('es-PE',{day:'numeric'}) : '';
     col.appendChild(val);
     col.appendChild(fill);
     col.appendChild(lbl);
     container.appendChild(col);
+  });
+}
+
+/* ============ Rendering: ventana de vigilia promedio por día ============ */
+function renderWakeWindowChart(){
+  const days = lastNDateKeys(chartRange);
+  const step = labelStep(days.length);
+  const windows = getWakeWindows();
+  const avgByDay = days.map(dk=>{
+    const w = windows.filter(x=>x.dayKey===dk).map(x=>x.minutes);
+    return w.length ? w.reduce((a,b)=>a+b,0)/w.length : 0;
+  });
+  const max = Math.max(60, ...avgByDay);
+  const container = document.getElementById('wwChart');
+  container.innerHTML = '';
+  days.forEach((dk,i)=>{
+    const col = document.createElement('div');
+    col.className='bar-col';
+    const val = document.createElement('div');
+    val.className='bar-val';
+    val.textContent = avgByDay[i]>0 ? minutesToHM(avgByDay[i]) : '';
+    const fill = document.createElement('div');
+    fill.className='bar-fill';
+    fill.style.background = 'linear-gradient(180deg, var(--sky), #5a6fa8)';
+    const pct = Math.max(2, (avgByDay[i]/max)*100);
+    fill.style.height = pct+'%';
+    const lbl = document.createElement('div');
+    lbl.className='bar-lbl';
+    const d = new Date(dk+"T12:00:00");
+    lbl.textContent = (i%step===0) ? d.toLocaleDateString('es-PE',{day:'numeric'}) : '';
+    col.appendChild(val); col.appendChild(fill); col.appendChild(lbl);
+    container.appendChild(col);
+  });
+}
+
+/* ============ Rendering: tendencia (promedio móvil 7 días) ============ */
+function totalHoursForDay(dk){
+  return sessions.filter(s=>dateKey(new Date(s.start))===dk).reduce((sum,s)=>sum+durationMinutes(s),0)/60;
+}
+function renderTrendChart(){
+  const days = lastNDateKeys(chartRange);
+  const step = labelStep(days.length);
+  const values = days.map(dk=>{
+    const d = new Date(dk+"T12:00:00");
+    let sum=0, count=0;
+    for(let k=0;k<7;k++){
+      const dd = new Date(d); dd.setDate(dd.getDate()-k);
+      sum += totalHoursForDay(dateKey(dd));
+      count++;
+    }
+    return sum/count;
+  });
+
+  const w = 320, h = 150, padL = 30, padR = 14, padB = 20, padT = 14;
+  const plotW = w-padL-padR, plotH = h-padT-padB;
+  const maxV = Math.max(4, ...values) * 1.1;
+  const n = values.length;
+  const slot = n>1 ? plotW/(n-1) : plotW;
+
+  const points = values.map((v,i)=>[padL+slot*i, padT+plotH-(v/maxV)*plotH]);
+  const linePath = points.map((p,i)=>(i===0?'M':'L')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const areaPath = linePath + ` L${points[points.length-1][0].toFixed(1)},${(padT+plotH).toFixed(1)} L${points[0][0].toFixed(1)},${(padT+plotH).toFixed(1)} Z`;
+
+  let grid='';
+  for(let i=0;i<=3;i++){
+    const y = padT+plotH*(i/3);
+    grid += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${w-padR}" y2="${y.toFixed(1)}" stroke="var(--card-line)" stroke-width="1"/>`;
+    const val = (maxV*(1-i/3)).toFixed(0);
+    grid += `<text x="2" y="${(y+3).toFixed(1)}" font-size="8" fill="var(--text-faint)" font-family="monospace">${val}h</text>`;
+  }
+  let labels='';
+  days.forEach((dk,i)=>{
+    if(i%step!==0) return;
+    const d = new Date(dk+"T12:00:00");
+    const txt = d.toLocaleDateString('es-PE',{day:'numeric'});
+    labels += `<text x="${points[i][0].toFixed(1)}" y="${h-4}" font-size="8" fill="var(--text-faint)" font-family="monospace" text-anchor="middle">${txt}</text>`;
+  });
+
+  const svg = `
+  <svg viewBox="0 0 ${w} ${h}" style="width:100%; height:150px; overflow:visible;">
+    <defs>
+      <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="var(--moon)" stop-opacity="0.35"/>
+        <stop offset="100%" stop-color="var(--moon)" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    ${grid}
+    <path d="${areaPath}" fill="url(#trendGrad)"/>
+    <path d="${linePath}" fill="none" stroke="var(--moon)" stroke-width="2.2"/>
+    ${labels}
+  </svg>`;
+  document.getElementById('trendChart').innerHTML = svg;
+}
+
+/* ============ Rendering: mapa de calor semanal ============ */
+function renderHeatmap(){
+  const days = lastNDateKeys(chartRange);
+
+  const hoursHeader = document.getElementById('heatHours');
+  hoursHeader.innerHTML = '<span></span>' + Array.from({length:24}, (_,h)=>
+    `<span>${(h%6===0) ? h : ''}</span>`
+  ).join('');
+
+  const rowsContainer = document.getElementById('heatRows');
+  rowsContainer.innerHTML = '';
+
+  days.forEach(dk=>{
+    const dayStart = new Date(dk+"T00:00:00");
+    const daySessions = sessions.filter(s=>{
+      const st = new Date(s.start), en = s.end?new Date(s.end):new Date();
+      const dEnd = new Date(dk+"T23:59:59");
+      return en>=dayStart && st<=dEnd;
+    });
+
+    const row = document.createElement('div');
+    row.className = 'heat-row';
+    const lbl = document.createElement('div');
+    lbl.className = 'heat-day-lbl';
+    const d = new Date(dk+"T12:00:00");
+    lbl.textContent = d.toLocaleDateString('es-PE',{day:'numeric', month:'numeric'});
+    row.appendChild(lbl);
+
+    for(let h=0; h<24; h++){
+      const hourStart = new Date(dk+"T00:00:00"); hourStart.setHours(h,0,0,0);
+      const hourEnd = new Date(hourStart.getTime()+3600000);
+      let asleepMin = 0;
+      daySessions.forEach(s=>{
+        const st = new Date(s.start), en = s.end?new Date(s.end):new Date();
+        const overlapStart = st>hourStart ? st : hourStart;
+        const overlapEnd = en<hourEnd ? en : hourEnd;
+        if(overlapEnd>overlapStart) asleepMin += (overlapEnd-overlapStart)/60000;
+      });
+      const frac = Math.min(1, asleepMin/60);
+      const cell = document.createElement('div');
+      cell.className = 'heat-cell';
+      if(frac>0){
+        cell.style.background = `rgba(240,184,110,${Math.max(0.12,frac).toFixed(2)})`;
+      }
+      row.appendChild(cell);
+    }
+    rowsContainer.appendChild(row);
   });
 }
 
@@ -796,6 +1155,14 @@ function renderStats(){
   const napsByDay = days7.map(dk => sessions.filter(s=>dateKey(new Date(s.start))===dk).length);
   const avgNaps7 = napsByDay.reduce((a,b)=>a+b,0)/7;
 
+  // wake window average (last 7 days of windows)
+  const allWindows = getWakeWindows();
+  const recentWindows = allWindows.filter(w=>days7.includes(w.dayKey)).map(w=>w.minutes);
+  const avgWakeWindow = recentWindows.length ? recentWindows.reduce((a,b)=>a+b,0)/recentWindows.length : 0;
+
+  // total historical sleep
+  const totalHistoricalMin = completed.reduce((s,x)=>s+durationMinutes(x),0);
+
   const cards = [
     {num: minutesToHM(avgPerDay7), lbl:'Promedio diario (7 días)'},
     {num: avgNaps7.toFixed(1), lbl:'Promedio de siestas/día (7 días)'},
@@ -803,6 +1170,8 @@ function renderStats(){
     {num: minutesToHM(longest), lbl:'Sueño más largo registrado'},
     {num: minutesToClock(avgStart), lbl:'Hora promedio: se duerme'},
     {num: minutesToClock(avgEnd), lbl:'Hora promedio: despierta'},
+    {num: avgWakeWindow>0 ? minutesToHM(avgWakeWindow) : '—', lbl:'Ventana de vigilia promedio (7 días)'},
+    {num: minutesToHM(totalHistoricalMin), lbl:'Total histórico dormido'},
   ];
   cards.forEach(c=>{
     const el = document.createElement('div');
@@ -936,13 +1305,22 @@ nameInput.value = localStorage.getItem(NAME_KEY) || 'Mi bebé';
 nameInput.addEventListener('change', ()=> localStorage.setItem(NAME_KEY, nameInput.value || 'Mi bebé'));
 
 /* ============ Master render ============ */
-function renderAll(){
-  renderButton();
-  renderChips();
-  renderSky();
+/* ============ Grouped range-chart render (used by range selector) ============ */
+function renderRangeCharts(){
+  renderHeatmap();
   renderOccChart();
   renderComboChart();
   renderBarChart();
+  renderWakeWindowChart();
+  renderTrendChart();
+}
+
+function renderAll(){
+  renderButton();
+  renderChips();
+  renderPrediction();
+  renderSky();
+  renderRangeCharts();
   renderStats();
   renderHistory();
 }
@@ -965,6 +1343,73 @@ document.getElementById('installBtn').addEventListener('click', async ()=>{
 });
 window.addEventListener('appinstalled', ()=>{
   document.getElementById('installBanner').classList.remove('show');
+});
+
+/* ============ Backup: export / import ============ */
+function downloadBlob(content, filename, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function todayStamp(){
+  const d = new Date();
+  const pad = n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+}
+document.getElementById('exportJsonBtn').addEventListener('click', ()=>{
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    babyName: localStorage.getItem(NAME_KEY) || 'Mi bebé',
+    sessions: sessions
+  };
+  downloadBlob(JSON.stringify(payload, null, 2), `sueno-bebe-backup-${todayStamp()}.json`, 'application/json');
+});
+document.getElementById('exportCsvBtn').addEventListener('click', ()=>{
+  const rows = [['Fecha','Inicio','Fin','Duracion (hh:mm)','Duracion decimal']];
+  const sorted = [...sessions].sort((a,b)=> new Date(a.start)-new Date(b.start));
+  sorted.forEach(s=>{
+    const st = new Date(s.start);
+    const dateStr = st.toLocaleDateString('es-PE');
+    const startStr = fmtTime(s.start);
+    const endStr = s.end ? fmtTime(s.end) : '';
+    const mins = durationMinutes(s);
+    const durHM = s.end ? minutesToHM(mins) : '';
+    const durDec = s.end ? toDecimalComma(mins/60,2) : '';
+    rows.push([dateStr, startStr, endStr, durHM, durDec]);
+  });
+  const csv = rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(';')).join('\r\n');
+  downloadBlob('\uFEFF'+csv, `sueno-bebe-${todayStamp()}.csv`, 'text/csv;charset=utf-8');
+});
+document.getElementById('importBtn').addEventListener('click', ()=>{
+  document.getElementById('importInput').click();
+});
+document.getElementById('importInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev)=>{
+    try{
+      const data = JSON.parse(ev.target.result);
+      const incoming = Array.isArray(data) ? data : data.sessions;
+      if(!Array.isArray(incoming)) throw new Error('formato inválido');
+      const valid = incoming.every(s => s && typeof s.start==='string' && ('end' in s));
+      if(!valid) throw new Error('formato inválido');
+      if(!confirm(`Se van a reemplazar tus ${sessions.length} registros actuales por ${incoming.length} del archivo. ¿Continuar?`)) return;
+      sessions = incoming.map(s=>({id: s.id||uid(), start:s.start, end:s.end||null}));
+      saveSessions(sessions);
+      if(data.babyName){ localStorage.setItem(NAME_KEY, data.babyName); nameInput.value = data.babyName; }
+      selectedDay = null;
+      renderAll();
+      alert('Datos importados correctamente.');
+    }catch(err){
+      alert('No se pudo leer el archivo. Asegúrate de usar un respaldo JSON exportado desde esta app.');
+    }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
 });
 
 /* ============ Service worker ============ */
